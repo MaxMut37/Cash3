@@ -1,37 +1,63 @@
 ﻿using Lab2.Models;
 using Microsoft.AspNetCore.Mvc;
 using Lab2.Repositories;
+using Laba2.DTO;
 
 namespace Lab2.Controllers
 {
     [ApiController]
-    [Route("api/data")]
-    public class HomeController : ControllerBase
+    [Route("api/items")]
+    public class ItemsController : ControllerBase
     {
         private readonly Repository _repository;
 
-        public HomeController(Repository repository)
+        public ItemsController(Repository repository)
         {
             _repository = repository;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Item>> GetAllData()
+        public IActionResult GetAll()
         {
-            return Ok(_repository.Items);
+            var items = _repository.GetAll();
+            return Ok(items);
         }
 
-        [HttpPut("{id}")]
-        public ActionResult UpdateData(int id, [FromBody] string newValue)
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
         {
-            var item = _repository.Items.FirstOrDefault(d => d.Id == id);
-            if (item == null)
-                return NotFound();
+            var item = _repository.GetById(id);
+            if (item == null) return NotFound();
+            return Ok(item);
+        }
 
-            item.Value = newValue;
-            _repository.SaveDataToFile();
+        [HttpPost]
+        public IActionResult Add(ItemAddDTO itemAdd)
+        {
+            var newItem = new Item(itemAdd.Value);
+            _repository.Add(newItem);
+            var itemRead = new ItemReadDTO { Value = newItem.Value, Id = newItem.Id };
+            return CreatedAtAction(nameof(Add), itemRead);
+        }
 
-            Console.WriteLine($"Data updated: {id} = {newValue}");
+        [HttpPatch("{id}")]
+        public IActionResult Update(int id, ItemAddDTO itemUpdate)
+        {
+            var item = _repository.GetById(id);
+            if (item == null) return NotFound();
+
+            item.Value = itemUpdate.Value;
+            _repository.Update(item);
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var item = _repository.GetById(id);
+            if (item == null) return NotFound();
+
+            _repository.Delete(id);
             return NoContent();
         }
     }
